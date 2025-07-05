@@ -20,26 +20,47 @@ function eom_bounce(fields, params, r)
     return δfields = SA[dϕ, dδϕ] 
 end
 # callback when the solution reaches the boundary condition: 1) ϕ > 0, 2) ϕ' < 0, 3) ϕ < -2ϕ0
-function is_falling_out(fields, r, integrator) #terminate the integration
+@inline function is_falling_out(fields, r, integrator) #terminate the integration
     ϕ, δϕ = fields
     ϕ0, λ, ϵ = integrator.p
-    return ϕ > 0 && δϕ > 0
+    return  ϕ > 0.2ϕ && δϕ > 0
 end
-function is_overshot(fields, r, integrator)
+function is_falling_out(sol, p)
+    ϕ, δϕ = sol.u[end]
+    ϕ0, λ, ϵ = p
+    return ϕ > 0.2ϕ && δϕ > 0
+end
+@inline function is_overshot(fields, r, integrator)
     ϕ, δϕ = fields
     ϕ0, λ, ϵ = integrator.p
-    return ϕ < -2ϕ0 && δϕ < 0
+    return ϕ < -2.2ϕ0 && δϕ < 0
 end
-function is_undershot(fields, r, integrator)
+function is_overshot(sol, p)
+    ϕ, δϕ = sol.u[end]
+    ϕ0, λ, ϵ = p
+    return ϕ < -2.2ϕ0 && δϕ < 0
+end
+@inline function is_undershot(fields, r, integrator)
     ϕ, δϕ = fields
     ϕ0, λ, ϵ = integrator.p
-    return ϕ < 0 && δϕ > 0
+    return -1.8ϕ0 < ϕ < -0.2ϕ0 && δϕ > 0
 end
-affect_falling_out!(integrator) = terminate!(integrator)
-affect_overshot!(integrator) = terminate!(integrator)
-affect_undershot!(integrator) = terminate!(integrator)
+function is_undershot(sol, p)
+    ϕ, δϕ = sol.u[end]
+    ϕ0, λ, ϵ = p
+    return -1.8ϕ0 < ϕ < -0.2ϕ0 && δϕ > 0
+end
+# Callback functions for the bounce problem
 cbs_bounce = CallbackSet(
-    DiscreteCallback(is_falling_out, affect_falling_out!),
-    DiscreteCallback(is_overshot, affect_overshot!),
-    DiscreteCallback(is_undershot, affect_undershot!)
+    DiscreteCallback(is_falling_out, terminate!),
+    DiscreteCallback(is_overshot, terminate!),
+    DiscreteCallback(is_undershot, terminate!)
 )
+# affect_falling_out!(integrator) = terminate!(integrator)
+# affect_overshot!(integrator) = terminate!(integrator)
+# affect_undershot!(integrator) = terminate!(integrator)
+# cbs_bounce = CallbackSet(
+#     DiscreteCallback(is_falling_out, affect_falling_out!),
+#     DiscreteCallback(is_overshot, affect_overshot!),
+#     DiscreteCallback(is_undershot, affect_undershot!)
+# )
