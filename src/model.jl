@@ -56,11 +56,10 @@ cbs_bounce = CallbackSet(
     DiscreteCallback(is_overshot, terminate!),
     DiscreteCallback(is_undershot, terminate!)
 )
-# affect_falling_out!(integrator) = terminate!(integrator)
-# affect_overshot!(integrator) = terminate!(integrator)
-# affect_undershot!(integrator) = terminate!(integrator)
-# cbs_bounce = CallbackSet(
-#     DiscreteCallback(is_falling_out, affect_falling_out!),
-#     DiscreteCallback(is_overshot, affect_overshot!),
-#     DiscreteCallback(is_undershot, affect_undershot!)
-# )
+
+function param_parser_bounce(params)
+    p = SA[params.ϕ0, params.λ, params.ϵ]  # Convert parameters to a StaticArray
+    u0 = SA[params.ϕ0, params.dϕ0]  # Initial conditions u0 = [ϕ, ϕ'], where ϕ is the scalar field and ϕ' is its derivative over r
+    tspan = (params.r0, params.r1)  # Time span for the simulation
+    return u0, tspan, p
+end
