@@ -57,8 +57,19 @@ cbs_bounce = CallbackSet(
     DiscreteCallback(is_undershot, terminate!)
 )
 
+"""
+Function to parse parameters for the bounce problem
+# structure of params:
+    - vev: the vacuum expectation value (vev) of the scalar field
+    - λ: the quartic coupling constant
+    - ϵ: the linear term in the scalar potential
+    - ϕ0: the initial value of the scalar field at r0
+    - dϕ0: the initial derivative of the scalar field at r0
+    - r0: the initial value of the radial coordinate
+    - r1: the final value of the radial coordinate
+"""
 function param_parser_bounce(params)
-    p = SA[params.ϕ0, params.λ, params.ϵ]  # Convert parameters to a StaticArray
+    p = SA[params.vev, params.λ, params.ϵ]  # Convert parameters to a StaticArray
     u0 = SA[params.ϕ0, params.dϕ0]  # Initial conditions u0 = [ϕ, ϕ'], where ϕ is the scalar field and ϕ' is its derivative over r
     tspan = (params.r0, params.r1)  # Time span for the simulation
     return u0, tspan, p
