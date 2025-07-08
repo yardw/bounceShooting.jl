@@ -74,3 +74,30 @@ function param_parser_bounce(params)
     tspan = (params.r0, params.r1)  # Time span for the simulation
     return u0, tspan, p
 end
+
+function shoot(inputs, ϕ0_scan_range)
+    # check ϕ0_scan_range is a vector of length 2 and of type Number but not NaN
+    if length(ϕ0_scan_range) != 2 || !all(isa.(ϕ0_scan_range, Number)) || any(isnan.(ϕ0_scan_range))
+        error("please check ϕ0_scan_range = [lowerbound, upperbound]")
+        return 
+    end
+    u0, tspan, params = param_parser_bounce(inputs)
+    prob = ODEProblem(eom_bounce, u0, tspan, params)
+    ϕ0_sections = sort(ϕ0_scan_range)
+    ϕ0mid = sum(ϕ0_sections) / length(ϕ0_sections)
+    for i in 1:50
+
+        sol = solve(remake(prob, u0=SA[ϕ0mid, 0.0]), Tsit5(), callback = cbs_bounce, save_on=false)
+
+        if is_falling_out(sol, params) || is_overshot(sol, params)
+            ϕ0_sections[2] = ϕ0mid
+        elseif is_undershot(sol, params)
+            ϕ0_sections[1] = ϕ0mid
+        else
+            @info sol.retcode
+            break
+        end
+        ϕ0mid = sum(ϕ0_sections) / length(ϕ0_sections)
+    end
+    return ϕ0mid, ϕ0_sections .- ϕ0mid
+end
