@@ -50,12 +50,32 @@ sol = solve(prob, Tsit5(), callback = cbs_bounce)  # Solve the ODE problem using
 #     end
 #     return ϕ0mid, ϕ0_sections .- ϕ0mid
 # end
-let inputs = (r0 = 1e-4, r1 = 200.0, ϕ0 = 1.0, dϕ0 = 0.0, λ = 0.1, ϵ = 1e-1, vev=1.0), ϕ0_scan_range = [0.0, -1.0]
-    shoot(inputs, ϕ0_scan_range)
+using Plots
+let inputs = (r0 = 1e-4, r1 = 200.0, ϕ0 = 1.0, dϕ0 = 0.0, λ = 0.1, ϵ = 1e-1, vev=1.0), ϕ0_scan_range = [-0.1, -1.0]
+    mean, var = shoot(inputs, ϕ0_scan_range)
+    @info "Mean ϕ0: $mean, Variance: $var"
+    # Update inputs with the mean ϕ0
+    refined_inputs = (inputs..., ϕ0 = mean+var)
+    plot(solve(ODEProblem(eom_bounce, param_parser_bounce(refined_inputs)...)), idxs=(0, 1), xlabel="r", ylabel="ϕ", title="Bounce Solution: ϕ vs r", ylims=(-1.5,0.5), label = "overshot"
+    )
+    refined_inputs = (inputs..., ϕ0 = mean-var)
+    plot!(solve(ODEProblem(eom_bounce, param_parser_bounce(refined_inputs)...)), idxs=(0, 1), label="undershot")
 end
+
+# test whether is_falling_out is working
+let inputs = (r0 = 1e-4, r1 = 200.0, ϕ0 = 1.0, dϕ0 = 0.0, λ = 0.1, ϵ = 1e-1, vev=1.0), ϕ0_scan_range = [-0.1, -1.0]
+    mean, var = shoot(inputs, ϕ0_scan_range)
+    @info "Mean ϕ0: $mean, Variance: $var"
+    # Update inputs with the mean ϕ0
+    refined_inputs = (inputs..., ϕ0 = mean-var)
+    sol = solve(ODEProblem(eom_bounce, param_parser_bounce(refined_inputs)...), Tsit5(), callback = DiscreteCallback(is_falling_out, terminate!), save_on=false)
+    @info "Final state: $(sol.u[end]), retcode: $(sol.retcode)"
+    plot(sol, idxs=(0, 1), xlabel="r", ylabel="ϕ", title="Bounce Solution: ϕ vs r", ylims=(-20.5,1.5))
+end
+
 
 # Visualize the solution
 using Plots
 plot(sol, idxs=(1, 2), xlabel="ϕ", ylabel="ϕ'", title="Bounce Solution: ϕ vs ϕ'")
-plot(sol, vars=(0, 1), xlabel="r", ylabel="ϕ", title="Bounce Solution: ϕ vs r")
+plot(sol, idxs=(0, 1), xlabel="r", ylabel="ϕ", title="Bounce Solution: ϕ vs r")
 

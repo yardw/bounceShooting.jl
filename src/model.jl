@@ -22,33 +22,33 @@ end
 # callback when the solution reaches the boundary condition: 1) ϕ > 0, 2) ϕ' < 0, 3) ϕ < -2ϕ0
 @inline function is_falling_out(fields, r, integrator) #terminate the integration
     ϕ, δϕ = fields
-    ϕ0, λ, ϵ = integrator.p
-    return  ϕ > 0.2ϕ && δϕ > 0
+    vev, λ, ϵ = integrator.p
+    return  ϕ > 0.2vev && δϕ > 0
 end
 function is_falling_out(sol, p)
     ϕ, δϕ = sol.u[end]
-    ϕ0, λ, ϵ = p
-    return ϕ > 0.2ϕ && δϕ > 0
+    vev, λ, ϵ = p
+    return ϕ > 0.2vev && δϕ > 0
 end
 @inline function is_overshot(fields, r, integrator)
     ϕ, δϕ = fields
-    ϕ0, λ, ϵ = integrator.p
-    return ϕ < -2.2ϕ0 && δϕ < 0
+    vev, λ, ϵ = integrator.p
+    return ϕ < -2.2vev && δϕ < 0
 end
 function is_overshot(sol, p)
     ϕ, δϕ = sol.u[end]
-    ϕ0, λ, ϵ = p
-    return ϕ < -2.2ϕ0 && δϕ < 0
+    vev, λ, ϵ = p
+    return ϕ < -2.2vev && δϕ < 0
 end
 @inline function is_undershot(fields, r, integrator)
     ϕ, δϕ = fields
-    ϕ0, λ, ϵ = integrator.p
-    return -1.8ϕ0 < ϕ < -0.2ϕ0 && δϕ > 0
+    vev, λ, ϵ = integrator.p
+    return -1.8vev < ϕ < -0.2vev && δϕ > 0
 end
 function is_undershot(sol, p)
     ϕ, δϕ = sol.u[end]
-    ϕ0, λ, ϵ = p
-    return -1.8ϕ0 < ϕ < -0.2ϕ0 && δϕ > 0
+    vev, λ, ϵ = p
+    return -1.8vev < ϕ < -0.2vev && δϕ > 0
 end
 # Callback functions for the bounce problem
 cbs_bounce = CallbackSet(
@@ -75,7 +75,7 @@ function param_parser_bounce(params)
     return u0, tspan, p
 end
 
-function shoot(inputs, ϕ0_scan_range)
+function shoot(inputs, ϕ0_scan_range, n=50)
     # check ϕ0_scan_range is a vector of length 2 and of type Number but not NaN
     if length(ϕ0_scan_range) != 2 || !all(isa.(ϕ0_scan_range, Number)) || any(isnan.(ϕ0_scan_range))
         error("please check ϕ0_scan_range = [lowerbound, upperbound]")
@@ -85,8 +85,7 @@ function shoot(inputs, ϕ0_scan_range)
     prob = ODEProblem(eom_bounce, u0, tspan, params)
     ϕ0_sections = sort(ϕ0_scan_range)
     ϕ0mid = sum(ϕ0_sections) / length(ϕ0_sections)
-    for i in 1:50
-
+    for i in 1:n
         sol = solve(remake(prob, u0=SA[ϕ0mid, 0.0]), Tsit5(), callback = cbs_bounce, save_on=false)
 
         if is_falling_out(sol, params) || is_overshot(sol, params)
@@ -99,5 +98,5 @@ function shoot(inputs, ϕ0_scan_range)
         end
         ϕ0mid = sum(ϕ0_sections) / length(ϕ0_sections)
     end
-    return ϕ0mid, ϕ0_sections .- ϕ0mid
+    return ϕ0mid, ϕ0_sections[2] - ϕ0mid
 end
